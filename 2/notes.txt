@@ -1,0 +1,34 @@
+Capítulos 1-6 de IO Docs
+
+
+1 - Excepciones y modos de ejecución
+
+CPSR - Registro de estado de la CPU
+R13 - SP
+R14 - LR
+R15 - PC
+SPSR - Shadow CPSR
+FIQ - Fast Interrupt
+
+Cuando la CPU recibe excepción (interno) / interrupción (externo), se
+interrumpe la actual ejecución, y se pasa a ejecutar otra, llamada ISR
+(Interrupt Service Routine). La ISR debe preservar el estado del procesador
+(R0-R15 + CPSR). Las excepciones/interrupciones se pueden solapar, por lo que
+debemos tener un sistema de prioridad.
+
+En concreto, ARMv7-TDMI tiene 7 modos de ejecución, representados por CPSR[4:0]
+(4 bits menos significativos de CPSR). El modo se puede cambiar modificando los
+bits (requiere privilegios, instrucción `msr`), o mediante excepción
+(cualquiera, usando `swi`). El único modo no privilegiado es `usr`, ejecución de
+código en modo usuario.
+
+Los distintos modos comparten varios registros. Algunos modos tienen copias
+propias de varios registros.
+
+User / System | R0-R15, CPSR
+FIQ | User: R0-R7, R15 + CPSR. Own: R8-R14, SPSR
+IRQ | User: R0-R12, R15 + CPSR. Own: R13, R14, SPSR
+SVC | See above
+Undef | See above
+Abort | See above
+
