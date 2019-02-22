@@ -121,12 +121,11 @@ int portG_read(int pin, enum digital* val) {
         return -1;
     }
 
-    // If pin bit on rPDATG is set to 1, return HIGH
-    int mask = (0x1 << pin);
-    if ((rPDATG & mask) == mask) {
-        *val = HIGH;
-    } else {
+    // If pin bit on rPDATG is set to 0, return LOW
+    if ((rPDATG & (0x1 << pin)) == 0) {
         *val = LOW;
+    } else {
+        *val = HIGH;
     }
 
     return 0;
