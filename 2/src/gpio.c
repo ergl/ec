@@ -93,14 +93,17 @@ int portG_write(int pin, enum digital val) {
         return -1;
     }
 
+    // If not in output mode (01), bail out
     if ((rPCONG & (0x3 << pos)) != (0x1 << pos)) {
         return -1;
     }
 
     if (val) {
         // Set on rPDATG the correct bit for the given pin to 1
+        rPDATG |= (0x1 << pin);
     } else {
         // Set on rPDATG the correct bit for the given pin to 0
+        rPDATG &= ~(0x1 << pin);
     }
 
     return 0;
