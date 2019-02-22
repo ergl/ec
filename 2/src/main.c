@@ -63,10 +63,12 @@ int loop(void) {
 
     // Push button 1 was pressed
     if (buttons & BUT1) {
-        // TODO(borja): Implement button 1 behaviour
-        // Using leds.h API, toggle LED 1 status
-        // Or turn off both LEDS (?) (comments vs outline)
-        // Toggle 8 led direction (RL.direction)
+        // First, turn off both LEDs
+        led1_off();
+        led2_off();
+
+        // Toggle RL direction
+        RL.direction = !RL.direction;
     }
 
     // Push button 2 was pressed
