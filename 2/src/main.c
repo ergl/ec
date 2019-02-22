@@ -38,6 +38,11 @@ static struct RLstat RL = {
 // Keep track of button 2 press events
 static unsigned int button2_counter = 0;
 
+// Modulo for both positive and negative numbers
+int modulo(int x, int n) {
+    return ((x % n) + n) % n;
+}
+
 // Will set up all HW registers
 int setup(void) {
     // Initialize LEDs
@@ -94,12 +99,21 @@ int loop(void) {
     // If RL is moving
     if (RL.moving) {
         RL.iter--;
-        // When reaching 0, we should advance
-        // RL.position 1 unit in RL.direction
-        // Rememeber: RL.position should always be in 0-5 range
+        // If reached 0, advance RL.position in RL.direction
+        // and redraw the segment
         if (RL.iter == 0) {
-            // TODO(borja): Advance logic
-            // Using D8LEd.h API
+            // Advance
+            if (RL.direction) {
+                RL.position = modulo(RL.position + 1, 6);
+            } else {
+                RL.position = modulo(RL.position - 1, 6);
+            }
+
+            // Reset iter field
+            RL.iter = RL.speed;
+
+            // Redraw
+            D8Led_segment(RL.position);
         }
     }
 
