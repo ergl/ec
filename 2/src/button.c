@@ -4,14 +4,14 @@
 **    button.c  10/6/2014
 **
 **    Estructura de Computadores
-**    Dpto. de Arquitectura de Computadores y Autom�tica
+**    Dpto. de Arquitectura de Computadores y Automática
 **    Facultad de Inform�tica. Universidad Complutense de Madrid
 **
-**  Prop�sito:
+**  Propósito:
 **    Contiene las implementaciones de las funciones
-**    para la gesti�n de los pulsadores de la placa de prototipado
+**    para la gestión de los pulsadores de la placa de prototipado
 **
-**  Notas de dise�o:
+**  Notas de diseño:
 **
 **-----------------------------------------------------------------*/
 
