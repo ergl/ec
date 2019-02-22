@@ -10,13 +10,11 @@ int portB_conf(int pin, enum port_mode mode) {
     }
 
     if (mode == SIGOUT) {
-        // TODO(borja): Implement
-        // Set on rPCONB the correct bit to 1 to set as signal output pin
-        // See page 5 of class notes
+        // Set pin bit to 1 (sigout mode)
+        rPCONB |= (0x1 << pin);
     } else if (mode == OUTPUT) {
-        // TODO(borja): Implement
-        // Set on rPCONB the correct bit to 1 to set as output pin
-        // See page 5 of class notes
+        // Set pin bit to 0 (output mode)
+        rPCONB &= ~(0x1 << pin);
     } else {
         ret = -1;
     }
@@ -34,11 +32,11 @@ int portB_write(int pin, enum digital val) {
     }
 
     if (val) {
-        // TODO(borja): Implement
-        // Set on rPDATB the correct bit for the given pin to 1
+        // Set pin bit to 1
+        rPDATB |= (0x1 << pin);
     } else {
-        // TODO(borja): Implement
-        // Set on rPDATB the correct bit for the given pin to 0
+        // Set pin bit to 0
+        rPDATB &= ~ (0x1 << pin);
     }
 
     return 0;
@@ -52,20 +50,24 @@ int portG_conf(int pin, enum port_mode mode) {
         return -1;
     }
 
-    // TODO(borja): Implement
-    // See page 5 on class notes
     switch (mode) {
         case INPUT:
             // Write 00 to rPCONG[pos:pos+1] to conf as input
+            rPCONG &= ~(0x3 << pos);
             break;
         case OUTPUT:
             // Write 01 to rPCONG[pos:pos+1] to conf as output
+            // First set to 00, then flip the first
+            rPCONG = ((rPCONG & ~(0x3 << pos)) | 0x1 << pos);
             break;
         case SIGOUT:
             // Write 10 to rPCONG[pos:pos+1] to conf as signal output
+            // First set to 00, then flip the last
+            rPCONG = ((rPCONG & ~(0x3 << pos)) | 0x1 << pos + 1);
             break;
         case EINT:
             // Write 11 to rPCONG[pos:pos+1] to conf as interrupt gen
+            rPCONG |= (0x3 << pos);
             break;
 
         default:
@@ -92,7 +94,7 @@ int portG_write(int pin, enum digital val) {
     }
 
     if ((rPCONG & (0x3 << pos)) != (0x1 << pos)) {
-        return -1; // indica error
+        return -1;
     }
 
     if (val) {
@@ -137,11 +139,15 @@ int portG_conf_pup(int pin, enum enable st) {
         return -1;
     }
 
-    // TODO(borja): Implement
+    // For PUPC-PUPG (pull up reg)
+    // If bit is 0 -> enabled
+    // If bit is 1 -> disabled
     if (st == ENABLE) {
-        // Set `pin` on rPUPG to the appropriate value to enable pull-up
+        // Set on rPUPG the `pin` bit to 0 (enable pull-up)
+        rPUPG &= ~ (0x1 << pin);
     } else {
-        // Set `pin` on rPUPG to the appropriate value to disable pull-up
+        // Set on rPUPG the `pin` bit to 1 (disable pull-up)
+        rPUPG |= (0x1 << pin);
     }
 
     return 0;
