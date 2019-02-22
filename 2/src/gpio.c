@@ -109,8 +109,6 @@ int portG_write(int pin, enum digital val) {
     return 0;
 }
 
-// TODO(borja): Implement
-// See page 6 on class notes
 int portG_read(int pin, enum digital* val) {
     int pos = pin*2;
 
@@ -118,12 +116,14 @@ int portG_read(int pin, enum digital* val) {
         return -1;
     }
 
+    // If not in input mode (00), bail out
     if (rPCONG & (0x3 << pos)) {
         return -1;
     }
 
-    // TODO(borja): true if in rPDATG, the given pin is set to 1
-    if (/* XXX */) {
+    // If pin bit on rPDATG is set to 1, return HIGH
+    int mask = (0x1 << pin);
+    if (rPDATG & mask == mask) {
         *val = HIGH;
     } else {
         *val = LOW;
