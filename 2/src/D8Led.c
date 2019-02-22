@@ -4,15 +4,15 @@
 **    D8Led.c  10/6/2014
 **
 **    Estructura de Computadores
-**    Dpto. de Arquitectura de Computadores y Autom�tica
-**    Facultad de Inform�tica. Universidad Complutense de Madrid
+**    Dpto. de Arquitectura de Computadores y Automática
+**    Facultad de Informática. Universidad Complutense de Madrid
 **
-**  Prop�sito:
+**  Propósito:
 **    Contiene las implementaciones de las funciones
 **    para el acceso al display 8-segmentos de la placa de prototipado
 **
-**  Notas de dise�o:
-**    Equivale al fichero hom�nimo usado en Fundamentos de Computadores
+**  Notas de diseño:
+**    Equivale al fichero homónimo usado en Fundamentos de Computadores
 **
 **-----------------------------------------------------------------*/
 
@@ -34,6 +34,26 @@
 #define SEGMENT_G   0x01
 #define SEGMENT_P   0x10
 
+// According to official docs
+//   ======== (A)
+//  || (F)  || (B)
+//  ||      ||
+//   ======== (G)
+//  || (E)  || (C)
+//  ||      ||
+//   ======== (D) [] (P)
+
+// According to ucm guide
+//   ======== (A)
+//  || (G)  || (B)
+//  ||      ||
+//   ======== (F)
+//  || (E)  || (C)
+//  ||      ||
+//   ======== (D) [] (P)
+
+// All wrong? (according to board user guide)
+// Correct (according to ucm docs)
 #define DIGIT_0  ( SEGMENT_A | SEGMENT_B | SEGMENT_C | SEGMENT_D | SEGMENT_E | SEGMENT_G )
 #define DIGIT_1  ( SEGMENT_B | SEGMENT_C )
 #define DIGIT_2  ( SEGMENT_A | SEGMENT_B | SEGMENT_F | SEGMENT_E | SEGMENT_D )
@@ -50,8 +70,6 @@
 #define DIGIT_D  ( SEGMENT_B | SEGMENT_C | SEGMENT_D | SEGMENT_E | SEGMENT_F )
 #define DIGIT_E  ( SEGMENT_A | SEGMENT_D | SEGMENT_E | SEGMENT_F | SEGMENT_G )
 #define DIGIT_F  ( SEGMENT_A | SEGMENT_E | SEGMENT_F | SEGMENT_G )
-
-
 
 // Array representing different states through the display
 static unsigned int Segments[] = { SEGMENT_A, SEGMENT_B, SEGMENT_C, SEGMENT_D,
