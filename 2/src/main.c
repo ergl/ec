@@ -6,6 +6,9 @@
 #include "D8Led.h"
 #include "gpio.h"
 
+#define PIN_BUT1 6
+#define PIN_BUT2 7
+
 struct RLstat {
     // 0 -> still, 1 -> moving
     int moving;
@@ -34,7 +37,6 @@ static struct RLstat RL = {
 
 // Will set up all HW registers
 int setup(void) {
-    // TODO(borja): Implement
     // Initialize LEDs
     leds_init();
 
@@ -42,10 +44,12 @@ int setup(void) {
     D8Led_init();
     D8Led_segment(RL.position);
 
-    // TODO(borja): Set up push buttons on port G
-    // Manually using gpio.h API
-    // Set up pins 6 and 7 on Port G as input
-    // Also remember to set up the pull-up reg for both
+    // Init buttons manually, and enable pull-up registry
+    portG_conf(PIN_BUT1, INPUT);
+    portG_conf_pup(PIN_BUT1, ENABLE);
+
+    portG_conf(PIN_BUT2, INPUT);
+    portG_conf_pup(PIN_BUT2, ENABLE);
 
     // Calibrate timer
     Delay(0);

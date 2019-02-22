@@ -86,18 +86,12 @@ void D8Led_init(void) {
 
 void D8Led_segment(int value) {
     if ((value >= 0) && (value < 8)) {
-        // TODO(borja): Implement
-        // Write on LED8ADDR the correct value to light up Segments[value]
-        // Write 0 -> ON
-        // Write 1 -> OFF
+        LED8ADDR = ~ Segments[value];
     }
 }
 
 void D8Led_digit(int value) {
     if ((value >= 0) && (value < 16)) {
-        // TODO(borja): Implement
-        // Write on LED8ADDR the correct value to light up Digits[value]
-        // Write 0 -> ON
-        // Write 1 -> OFF
+        LED8ADDR = ~ Digits[value];
     }
 }

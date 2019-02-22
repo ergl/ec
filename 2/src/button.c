@@ -27,9 +27,9 @@
 
 // Read button status
 // Return value has the last two bits
-// encoding button state
+// encoding button state.
 //
-// If the bit is 1, the button was pressed
+// If the bit is 1, the button was pressed.
 // If the bit is 0, the button was not pressed
 unsigned int read_button(void) {
     unsigned int buttons = 0;
