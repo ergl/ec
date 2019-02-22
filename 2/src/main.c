@@ -35,6 +35,9 @@ static struct RLstat RL = {
     .position = 0,
 };
 
+// Keep track of button 2 press events
+static unsigned int button2_counter = 0;
+
 // Will set up all HW registers
 int setup(void) {
     // Initialize LEDs
@@ -73,16 +76,19 @@ int loop(void) {
 
     // Push button 2 was pressed
     if (buttons & BUT2) {
-        // TODO(borja): Implement button 2 behaviour
+        // First, increment internal counter, and toggle led accordingly
+        // FIXME(borja): Might overflow? Swap to a boolean toggle
+        button2_counter++;
+        if (button2_counter & 1) {
+            // Odd, toggle LED 2
+            led2_switch();
+        } else {
+            // Even, toggle LED 1
+            led1_switch();
+        }
 
-        // Using leds.h API, toggle LED 2 status (?) (comments vs outline)
-        // Or toggle LED status according to internal counter
-        // If counter is even -> toggle LED 1
-        // If odd -> toggle LED 2
-
-        // Toggle RL.moving state
-        // If putting it in movement (0 -> 1),
-        // refresh RL.iter to RL.speed
+        // Then, toggle RL.moving
+        RL.moving = !RL.moving;
     }
 
     // If RL is moving
