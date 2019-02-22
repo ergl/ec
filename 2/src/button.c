@@ -21,22 +21,36 @@
 #include "leds.h"
 #include "gpio.h"
 
+// Button pins
+#define PIN_BTN1 6
+#define PIN_BTN2 7
+
+// Read button status
+// Return value has the last two bits
+// encoding button state
+//
+// If the bit is 1, the button was pressed
+// If the bit is 0, the button was not pressed
 unsigned int read_button(void) {
     unsigned int buttons = 0;
     enum digital val;
 
-    // TODO(borja): Implement read_button
-    // Using gpio.h API, read from pins 6 and 7 from Port G (portG_read)
-    // Return value (buttons) will be an unsigned int where the last two bits
-    // will encode button state
-    //
-    // buttons[0] -> Pin 6 status (0 is pushed, 1 is not)
-    // buttons[1] -> Pin 7 status (0 is pushed, 1 is not)
-    // Use BUT1 (0x1) and BUT2 (0x2) macros to return
-    // BUT1 -> BUT1 was pressed
-    // BUT2 -> BUT2 was pressed
-    //
-    // XXX: See page 6 on class notes
+    // Read from button 1
+    if (portG_read(PIN_BTN1, &val) != 0) {
+        return -1;
+    }
+
+    if (val == LOW) {
+        buttons |= BUT1;
+    }
+
+    if (portG_read(PIN_BTN2, &val) != 0) {
+        return -1;
+    }
+
+    if (val == LOW) {
+        buttons |= BUT2;
+    }
 
     return buttons;
 }
