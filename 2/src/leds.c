@@ -5,8 +5,14 @@
 // Bitmasks
 #define LED1 0x01
 #define LED2 0x02
-#define BIT_LED1 9
-#define BIT_LED2 10
+
+// LED pins
+#define PIN_LED1 9
+#define PIN_LED2 10
+
+// LEDs are connected to pins 9 and 10 on port B
+// so we should conf Port B as output mode
+// and write '1' when we want to turn them on (rPDATB)
 
 // LED status. Only look at the two lowest bits,
 // each for a single LED
@@ -14,10 +20,10 @@
 static unsigned int status = 0;
 
 void leds_init(void) {
-    // TODO(borja): Should set up pins 9 and 10 on Port B
-    // Need to set up both as output pins, using gpio.h API
+    // Should set up pins 9 and 10 as output
+    portB_conf(PIN_LED1, OUTPUT);
+    portB_conf(PIN_LED2, OUTPUT);
 
-    // TODO(borja): Implement
     leds_display(status);
 }
 
@@ -57,22 +63,26 @@ void leds_switch(void){
 }
 
 // Turn on an LED
-// LED1 -> Turn on LED 1 (?)
-// LED2 -> Turn on LED 2 (?)
+//
+// leds_status:
+// (00) -> Both off
+// (01) -> LED 2 off, LED 1 on
+// (10) -> LED 2 on, LED 1 off
+// (11) -> Both on
 void leds_display(unsigned int leds_status) {
     status = leds_status;
 
-    // LED 1
+    // LED 1 is set, turn on (write 0 on port b)
     if(status & LED1) {
-        // Using gpio.h API, set LED 1 bit on Port B to LOW
+        portB_write(PIN_LED1, LOW);
     } else {
-        // Using gpio.h API, set LED 1 bit on Port B to HIGH
+        portB_write(PIN_LED1, HIGH);
     }
 
-    // LED 2
+    // LED 2 is set, turn on (write 0 on port b)
     if(status & LED2) {
-        // Using gpio.h API, set LED 2 bit on Port B to LOW
+        portB_write(PIN_LED2, LOW);
     } else {
-        // Using gpio.h API, set LED 2 bit on Port B to HIGH
+        portB_write(PIN_LED2, HIGH);
     }
 }
