@@ -63,7 +63,7 @@ int portG_conf(int pin, enum port_mode mode) {
         case SIGOUT:
             // Write 10 to rPCONG[pos:pos+1] to conf as signal output
             // First set to 00, then flip the last
-            rPCONG = ((rPCONG & ~(0x3 << pos)) | 0x1 << pos + 1);
+            rPCONG = ((rPCONG & ~(0x3 << pos)) | 0x1 << (pos + 1));
             break;
         case EINT:
             // Write 11 to rPCONG[pos:pos+1] to conf as interrupt gen
@@ -123,7 +123,7 @@ int portG_read(int pin, enum digital* val) {
 
     // If pin bit on rPDATG is set to 1, return HIGH
     int mask = (0x1 << pin);
-    if (rPDATG & mask == mask) {
+    if ((rPDATG & mask) == mask) {
         *val = HIGH;
     } else {
         *val = LOW;
