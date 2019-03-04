@@ -13,30 +13,37 @@ struct RLstat {
     // 0 -> still, 1 -> moving
     int moving;
     // speed in loops
+    int speed_idx;
     int speed;
     // how many iterations in the last loop
     // if 0, will move in `direction`
     // when moved, should reset to `speed`
     int iter;
     // 0 -> counterclockwise, 1 -> clockwise
-    int direction;
+    int direction1;
+    int direction2;
     // position represented as index in
     // Segments[] (see D8Led.c)
     // Should be always between 0 and 5
     // (modulo movement, always in circles)
-    int position;
+    int position1;
+    int position2;
 };
 
 static struct RLstat RL = {
-    .moving = 0,
-    .speed = 5,
+    .moving = 1,
+    .speed_idx = 0,
+    .speed = 3,
     .iter = 1,
-    .direction = 0,
-    .position = 0,
+    .direction1 = 0,
+    .direction2 = 0,
+    .position1 = 0,
+    .position2 = 1,
 };
 
 // Keep track of button 2 press events
 static unsigned int button2_counter = 0;
+static unsigned int Speeds[] = {3, 6, 9, 12};
 
 // Modulo for both positive and negative numbers
 int modulo(int x, int n) {
@@ -50,7 +57,7 @@ int setup(void) {
 
     // Initialize and light up appropriate segment
     D8Led_init();
-    D8Led_segment(RL.position);
+    D8Led_2segments(RL.position1, RL.position2);
 
     // Init buttons manually, and enable pull-up registry
     portG_conf(PIN_BUT1, INPUT);
@@ -75,8 +82,9 @@ int loop(void) {
         led1_off();
         led2_off();
 
-        // Toggle RL direction
-        RL.direction = !RL.direction;
+        // Increase speed
+        RL.speed_idx = modulo(RL.speed_idx + 1, 4);
+        RL.speed = Speeds[RL.speed_idx];
     }
 
     // Push button 2 was pressed
@@ -92,8 +100,8 @@ int loop(void) {
             led1_switch();
         }
 
-        // Then, toggle RL.moving
-        RL.moving = !RL.moving;
+        // Toggle direction1
+        RL.direction1 = !RL.direction1;
     }
 
     // If RL is moving
@@ -103,17 +111,23 @@ int loop(void) {
         // and redraw the segment
         if (RL.iter == 0) {
             // Advance
-            if (RL.direction) {
-                RL.position = modulo(RL.position + 1, 6);
+            if (RL.direction1) {
+                RL.position1 = modulo(RL.position1 + 1, 6);
             } else {
-                RL.position = modulo(RL.position - 1, 6);
+                RL.position1 = modulo(RL.position1 - 1, 6);
+            }
+
+            if (RL.direction2) {
+                RL.position2 = modulo(RL.position2 + 1, 6);
+            } else {
+                RL.position2 = modulo(RL.position2 - 1, 6);
             }
 
             // Reset iter field
             RL.iter = RL.speed;
 
             // Redraw
-            D8Led_segment(RL.position);
+            D8Led_2segments(RL.position1, RL.position2);
         }
     }
 

@@ -21,6 +21,7 @@
 
 void D8Led_init(void);
 void D8Led_segment(int value);
+void D8Led_2segments(int value0, int value1);
 void D8Led_digit(int value);
 
 #endif
