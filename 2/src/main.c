@@ -30,7 +30,7 @@ struct RLstat {
 static struct RLstat RL = {
     .moving = 0,
     .speed = 5,
-    .iter = 0,
+    .iter = 1,
     .direction = 0,
     .position = 0,
 };
