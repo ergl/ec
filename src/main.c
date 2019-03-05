@@ -4,7 +4,10 @@
 #include "leds.h"
 #include "utils.h"
 #include "D8Led.h"
+#include "intcontroller.h"
+#include "timer.h"
 #include "gpio.h"
+#include "keyboard.h"
 
 #define PIN_BUT1 6
 #define PIN_BUT2 7
@@ -14,10 +17,6 @@ struct RLstat {
     int moving;
     // speed in loops
     int speed;
-    // how many iterations in the last loop
-    // if 0, will move in `direction`
-    // when moved, should reset to `speed`
-    int iter;
     // 0 -> counterclockwise, 1 -> clockwise
     int direction;
     // position represented as index in
@@ -30,7 +29,6 @@ struct RLstat {
 static struct RLstat RL = {
     .moving = 0,
     .speed = 5,
-    .iter = 1,
     .direction = 0,
     .position = 0,
 };
@@ -38,31 +36,35 @@ static struct RLstat RL = {
 // Keep track of button 2 press events
 static unsigned int button2_counter = 0;
 
-// Will set up all HW registers
-int setup(void) {
-    // Initialize LEDs
-    leds_init();
+// ISR functions
+void timer_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void button_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
 
-    // Initialize and light up appropriate segment
-    D8Led_init();
+// Timer ISR, implements drawing logic
+void timer_ISR(void) {
+
+    // If it's not moving, no need to redraw
+    if (!RL.moving) {
+        return;
+    }
+
+    if (RL.direction) {
+        RL.position = modulo(RL.position + 1, 6);
+    } else {
+        RL.position = modulo(RL.position - 1, 6);
+    }
+
+    // Redraw
     D8Led_segment(RL.position);
-
-    // Init buttons manually, and enable pull-up registry
-    portG_conf(PIN_BUT1, INPUT);
-    portG_conf_pup(PIN_BUT1, ENABLE);
-
-    portG_conf(PIN_BUT2, INPUT);
-    portG_conf_pup(PIN_BUT2, ENABLE);
-
-    // Calibrate timer
-    Delay(0);
-    return 0;
 }
 
-// Main body loop
-int loop(void) {
-    // Check if any pushbuttons were pressed
-    unsigned int buttons = read_button();
+void button_ISR(void) {
+    unsigned int whicheint = rEXTINTPND;
+    unsigned int buttons = (whicheint >> 2) & 0x3;
+
+    // FIXME: Need to check which button was pressed?
+    // unsigned int buttons = read_button();
 
     // Push button 1 was pressed
     if (buttons & BUT1) {
@@ -74,7 +76,6 @@ int loop(void) {
         RL.direction = !RL.direction;
     }
 
-    // Push button 2 was pressed
     if (buttons & BUT2) {
         // First, increment internal counter, and toggle led accordingly
         // FIXME(borja): Might overflow? Swap to a boolean toggle
@@ -91,32 +92,114 @@ int loop(void) {
         RL.moving = !RL.moving;
     }
 
-    // If RL is moving
-    if (RL.moving) {
-        RL.iter--;
-        // If reached 0, advance RL.position in RL.direction
-        // and redraw the segment
-        if (RL.iter == 0) {
-            // Advance
-            if (RL.direction) {
-                RL.position = modulo(RL.position + 1, 6);
-            } else {
-                RL.position = modulo(RL.position - 1, 6);
-            }
+    // Wait for debounce
+    Delay(2000);
 
-            // Reset iter field
-            RL.iter = RL.speed;
+    // Clean extintpnd flag
+    // TODO: We must clear the pending interrupt flag in rEXTINTPND
+    // Write 1 on the flags we want to clear (the ones corresponding to the
+    // buttons that were pushed)
 
-            // Redraw
-            D8Led_segment(RL.position);
-        }
+    // TODO
+    // rEXTINTPND = ...
+
+    // TODO: Clear interrupt flag on the interrupt controller ?
+}
+
+void keyboard_ISR(void) {
+    int key;
+
+    // Wait for debounce
+    Delay(200);
+
+    // Get key (TODO: Implement)
+    key = kb_scan();
+
+    if (key == -1) {
+        goto exit_kb_isr;
     }
 
-    // Wait for 200ms, so this loop executes 5 times/second
-    Delay(2000);
+    // TODO: Display key on the 8-segment display (using API on D8Led)
+
+    switch (key) {
+        case 0:
+            // TODO: Set timer 0: freq 2s, count 62500, div 1/8
+            break;
+        case 1:
+            // TODO: Set timer 0: freq 1s, count 31250, div 1/8
+            break;
+        case 2:
+            // TODO: Set timer 0: freq 0.5s, count 15625, div 1/8
+            break;
+        case 3:
+            // TODO: Set timer 0: freq 0.25s, count 15625, div 1/4
+            break;
+        default:
+            break;
+    }
+
+    // TODO: Wait until key is depressed
+    // See outline, page 5
+    while ( /* TODO: True when key is depressed */ ) {
+        // Noop wait
+    }
+
+    /* Eliminar rebotes de depresión */
+
+exit_kb_isr:
+    // Wait for debounce
+    Delay(200);
+
+    // TODO: Clear pending interrupts on line EINT1 (rI_ISPC register)
+}
+
+// Will set up all HW registers
+int setup(void) {
+    // Initialize LEDs
+    leds_init();
+
+    // Initialize and light up appropriate segment
+    D8Led_init();
+    D8Led_segment(RL.position);
+
+    // Init buttons manually, and enable pull-up registry
+    // TODO: Configure Port G to generate external interrupts.
+    // Do this for leds, kb and buttons
+    // For pins 1, 6 and 7 (G port), enable interrupts on falling edge
+    // and enable appropriate pull-up registers
+
+    // TODO: Set up timer
+
+    if (RL.moving) {
+        tmr_start(TIMER0);
+    }
+
+    // TODO: Register ISR
+    // pISR_TIMER0 = ...
+    // pISR_EINT4567 = ...
+    // pISR_EINT1 = ...
+
+    ic_init();
+
+    // TODO: Set up interrupt lines (using intcontroller.h API)
+    // 1. Enable IRQ line in vectorized mode
+    // 2. Disable FIQ line
+    // 3. Set up INT_TIMER0 in IRQ mode
+    // 4. Set up INT_EINT4567 in IRQ mode
+    // 5. Set up INT_EINT1 in IRQ mode
+    // 6. Enable INT_TIMER0
+    // 7. Enable INT_EINT4567
+    // 8. Enable INT_EINT1
+
+
+    // Calibrate timer
+    Delay(0);
     return 0;
 }
 
+int loop(void) {
+    return 0;
+}
 
 int main(void) {
     setup();

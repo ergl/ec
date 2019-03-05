@@ -77,8 +77,43 @@ int portG_conf(int pin, enum port_mode mode) {
     return 0;
 }
 
-// TODO(borja): Implement in advanced part
+// We also find the External Interrupt conf on the port G,
+// particularly, on the EXTINT register.
+// EXTING is a 30bit register (single-address),
+// where each of the 8 pins are given 3 bits in 4-bit increments
+// (each pin is at the pin*4-th bit)
 int portG_eint_trig(int pin, enum trigger trig) {
+    int pos = pin * 4;
+
+    if (pin < 0 || pin > 7) {
+        return -1;
+    }
+
+    switch (trig) {
+        case LLOW:
+            // TODO: write on rEXTINT after `pos` 3 bits to 000
+            // This sets the interrupt to low
+            break;
+        case LHIGH:
+            // TODO: write on rEXTINT after `pos` 3 bits to 001
+            // This sets the interrupt to high
+            break;
+        case FALLING:
+            // TODO: write on rEXTINT after `pos` 3 bits to 01X
+            // This sets the interrupt to falling edge
+            break;
+        case RISING:
+            // TODO: write on rEXTINT after `pos` 3 bits to 10X
+            // This sets the interrupt to rising edge
+            break;
+        case EDGE:
+            // TODO: write on rEXTINT after `pos` 3 bits to 11X
+            // This sets the interrupt to falling/rising edge
+            break;
+        default:
+            return -1;
+    }
+
     return 0;
 }
 
