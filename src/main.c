@@ -38,11 +38,6 @@ static struct RLstat RL = {
 // Keep track of button 2 press events
 static unsigned int button2_counter = 0;
 
-// Modulo for both positive and negative numbers
-int modulo(int x, int n) {
-    return ((x % n) + n) % n;
-}
-
 // Will set up all HW registers
 int setup(void) {
     // Initialize LEDs

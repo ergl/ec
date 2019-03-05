@@ -20,5 +20,6 @@
 #define UTILS_H_
 
 void Delay(int time);
+int modulo(int x, int n);
 
 #endif

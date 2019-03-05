@@ -46,3 +46,7 @@ void Delay(int time) {
 	}
 }
 
+// Modulo for both positive and negative numbers
+int modulo(int x, int n) {
+    return ((x % n) + n) % n;
+}
