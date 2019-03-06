@@ -216,6 +216,10 @@ int setup(void) {
     D8Led_init();
     D8Led_segment(RL.position);
 
+    // ------------------------------------------------------------
+    // Port G configuration
+    // ------------------------------------------------------------
+
     // Enable button handling via interrupts (pins 6 and 7)
     // * Enable pin mode to EINT
     // * Set up pull-up registry
@@ -234,12 +238,20 @@ int setup(void) {
     portG_conf_pup(KB_PIN, ENABLE);
     portG_eint_trig(KB_PIN, FALLING);
 
+    // ------------------------------------------------------------
+    // Timer 0 configuration
+    // ------------------------------------------------------------
+
     // Set up timer 0 to fire every 2s
     // We need a prescaler value of 255, and a divider of 8
     setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
     if (RL.moving) {
         tmr_start(TIMER0);
     }
+
+    // ------------------------------------------------------------
+    // Set up ISR handlers
+    // ------------------------------------------------------------
 
     // Register ISR for keyboard (EINT1) and timer (TIMER0)
     pISR_EINT1 = (int) keyboard_ISR;
@@ -250,22 +262,33 @@ int setup(void) {
     // This is done reading the EXTINTPND[3:0] register
     pISR_EINT4567 = (int) button_ISR;
 
+    // ------------------------------------------------------------
+    // Configure interrupt controller
+    // ------------------------------------------------------------
+
     // Reset Interrupt Controller to default configuration
     ic_init();
 
-    // TODO: Set up interrupt lines (using intcontroller.h API)
-    // 1. Enable IRQ line in vectorized mode
-    // 2. Disable FIQ line
-    // 3. Set up INT_TIMER0 in IRQ mode
-    // 4. Set up INT_EINT4567 in IRQ mode
-    // 5. Set up INT_EINT1 in IRQ mode
-    // 6. Enable INT_TIMER0
-    // 7. Enable INT_EINT4567
-    // 8. Enable INT_EINT1
+    // Keep FIQ disabled and enable IRQ in vectorized mode
+    ic_conf_fiq(DISABLE);
+    ic_conf_irq(ENABLE, VEC);
 
+    // Configure timer, push buttons keyboard lines in IRQ
+    ic_conf_line(INT_TIMER0, IRQ);
+    ic_conf_line(INT_EINT4567, IRQ); // Buttons
+    ic_conf_line(INT_EINT1, IRQ); // Keyboard
 
+    // Enable timer, push buttons and keyboard lines
+    ic_enable(INT_TIMER0);
+    ic_enable(INT_EINT4567);
+    ic_enable(INT_EINT1);
+
+    // ------------------------------------------------------------
     // Calibrate timer
+    // ------------------------------------------------------------
+
     Delay(0);
+
     return 0;
 }
 
