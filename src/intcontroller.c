@@ -21,6 +21,7 @@ void ic_init(void) {
     rINTMSK = ~(0x0);
 }
 
+// Configure IRQ mode (enable/disable, vector/non-vector)
 int ic_conf_irq(enum enable st, enum int_vec vec) {
     int conf = rINTCON;
 
@@ -28,40 +29,49 @@ int ic_conf_irq(enum enable st, enum int_vec vec) {
         return -1;
     }
 
-
     if (vec == VEC) {
-        // TODO: Set IRQ line in vectorized mode
+        // Set 3rd bit to 0
+        conf &= ~(0x4);
     } else {
-        // TODO: Set IRQ line in non-vectorized mode
+        // Set 3rd bit to 1
+        conf |= 0x4;
     }
 
-
     if (st == ENABLE) {
-        // TODO: Enable IRQ line
+        // Set 2nd bit to 0
+        conf &= ~(0x2);
     } else {
-        // TODO: Disable IRQ line
+        // Set 2nd bit to 1
+        conf |= 0x2;
     }
 
     rINTCON = conf;
     return 0;
 }
 
+// Enable/disable FIQ line.
+// IMPORTANT: Disable IRQ vectorized mode before enabling FIQ
+// From docs INTCON[0]: 0 = FIQ interrupt enable (Not allowed vect. int. mode)
 int ic_conf_fiq(enum enable st) {
-    int ret = 0;
+    int conf = rINTCON;
 
     if (st != ENABLE && st != DISABLE) {
         return -1;
     }
 
     if (st == ENABLE) {
-        // TODO: Enable FIQ line
+        // Set 1st bit to 0
+        conf &= ~(0x1);
     } else {
-        // TODO: Disable FIQ line
+        // Set 1st bit to 1
+        conf |= 0x1;
     }
 
+    rINTCON = conf;
     return 0;
 }
 
+// Config interrupt line mode (IRQ/FIQ)
 int ic_conf_line(enum int_line line, enum int_mode mode) {
     unsigned int bit = INT_BIT(line);
 
@@ -74,35 +84,47 @@ int ic_conf_line(enum int_line line, enum int_mode mode) {
         return -1;
     }
 
+    // Have to change specified bit on rINTMOD
     if (mode == IRQ) {
-        // TODO: Set up line `line` on IRQ
+        // Set bit to 0 (IRQ mode)
+        rINTMOD &= ~bit;
     } else {
-        // TODO: Set up line `line` on FIQ
+        // Set bit to 1 (FIQ mode)
+        rINTMOD |= bit;
     }
 
     return 0;
 }
 
+// Enable (unmask) the given line
 int ic_enable(enum int_line line) {
+    unsigned int bit = INT_BIT(line);
+
     if (line < 0 || line > 26) {
         return -1;
     }
 
-    // TODO: Enable interrupts on line `line`
+    // Set line bit to 0 to mark it as available
+    rINTMSK &= ~bit;
 
     return 0;
 }
 
+// Disable (mask) the given line
 int ic_disable(enum int_line line) {
+    unsigned int bit = INT_BIT(line);
+
     if (line < 0 || line > 26) {
         return -1;
     }
 
-    // TODO: Mask interrupts on line `line`
+    // Set line bit to 0 to mark it as masked
+    rINTMSK |= bit;
 
     return 0;
 }
 
+// Clear the Service Pending for the given line
 int ic_cleanflag(enum int_line line) {
     int bit;
 
@@ -112,10 +134,12 @@ int ic_cleanflag(enum int_line line) {
 
     bit = INT_BIT(line);
 
-    if (rINTMOD & bit) {
-        // TODO: Clean up flag on `line`, being that line in FIQ mode
-    } else {
-        // TODO: Clean up flag on `line`, being that line in IRQ mode
+    // On {I,F}_ISPC, the flag can be cleared
+    // by just writing `1` to the corresponding
+    if (rINTMOD & bit) { // Line is in FIQ mode
+        rF_ISPC = bit;
+    } else { // Line is in IRQ mode
+        rI_ISPC = bit;
     }
 
     return 0;
