@@ -48,7 +48,6 @@ void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
 
 // Timer ISR, implements drawing logic
 void timer_ISR(void) {
-
     // If it's not moving, no need to redraw
     if (!RL.moving) {
         return;
@@ -62,6 +61,8 @@ void timer_ISR(void) {
 
     // Redraw
     D8Led_segment(RL.position);
+
+    // XXX: Need to clear the pending flag?
 }
 
 void button_ISR(void) {
@@ -84,7 +85,8 @@ void button_ISR(void) {
 
     if (buttons & BUT2) {
         // First, increment internal counter, and toggle led accordingly
-        // FIXME(borja): Might overflow? Swap to a boolean toggle
+        // FIXME: Can we even update this from ISR context?
+        // Might overflow? Swap to a boolean toggle
         button2_counter++;
         if (button2_counter & 1) {
             // Odd, toggle LED 2
@@ -119,9 +121,7 @@ void keyboard_ISR(void) {
     // Wait for debounce
     Delay(200);
 
-    // Get key (TODO: Implement)
     key = kb_scan();
-
     if (key == -1) {
         goto exit_kb_isr;
     }
@@ -148,10 +148,8 @@ void keyboard_ISR(void) {
     // TODO: Wait until key is depressed
     // See outline, page 5
     while ( /* TODO: True when key is depressed */ ) {
-        // Noop wait
+        // Active wait
     }
-
-    /* Eliminar rebotes de depresión */
 
 exit_kb_isr:
     // Wait for debounce
