@@ -9,8 +9,13 @@
 #include "gpio.h"
 #include "keyboard.h"
 
-#define PIN_BUT1 6
-#define PIN_BUT2 7
+// Pin macros
+#define KB_PIN 1
+#define BTTN1_PIN 6
+#define BTTN2_PIN 7
+
+// Default timer CMP register value
+#define TMR_CMP 1
 
 struct RLstat {
     // 0 -> still, 1 -> moving
@@ -153,7 +158,54 @@ exit_kb_isr:
     // TODO: Clear pending interrupts on line EINT1 (rI_ISPC register)
 }
 
-// Will set up all HW registers
+// Setup timer `t` with the given values
+int setup_timer(enum tmr_timer t,
+                int prescaler_value,
+                enum tmr_div div_value,
+                int timer_count,
+                enum tmr_mode mode) {
+
+
+    int prescaler_p;
+
+    // Divider is the same as the timer
+    int divider_p = (int) t;
+
+    // Set timer mode
+    if (tmr_set_mode(t, mode) != 0) {
+        return -1;
+    }
+
+    // Set count and cmp registers
+    if (tmr_set_count(t, timer_count, TMR_CMP) != 0) {
+        return -1;
+    }
+
+    // Set divider value
+    if (tmr_set_divider(divider_p, div_value) != 0) {
+        return -1;
+    }
+
+    // Which prescaler should we use?
+    // Prescaler are shared every two timers
+    if (t == TIMER0 || t == TIMER1) {
+        prescaler_p = 0;
+    } else if (t == TIMER2 || t == TIMER3) {
+        prescaler_p = 1;
+    } else if (t == TIMER4 || t == TIMER5) {
+        prescaler_p = 2;
+    } else {
+        return -1;
+    }
+
+    if (tmr_set_prescaler(prescaler_p, prescaler_value) != 0) {
+        return -1;
+    }
+
+    // Flush the buffer registers and force-update the timer
+    return tmr_update(t);
+}
+
 int setup(void) {
     // Initialize LEDs
     leds_init();
@@ -162,23 +214,41 @@ int setup(void) {
     D8Led_init();
     D8Led_segment(RL.position);
 
-    // Init buttons manually, and enable pull-up registry
-    // TODO: Configure Port G to generate external interrupts.
-    // Do this for leds, kb and buttons
-    // For pins 1, 6 and 7 (G port), enable interrupts on falling edge
-    // and enable appropriate pull-up registers
+    // Enable button handling via interrupts (pins 6 and 7)
+    // * Enable pin mode to EINT
+    // * Set up pull-up registry (XXX: needed?)
+    // * Set up interrupt mode for that pin
+    portG_conf(BTTN1_PIN, EINT);
+    portG_conf_pup(BTTN1_PIN, ENABLE);
+    portG_eint_trig(BTTN1_PIN, FALLING);
 
-    // TODO: Set up timer
+    portG_conf(BTTN2_PIN, EINT);
+    portG_conf_pup(BTTN2_PIN, ENABLE);
+    portG_eint_trig(BTTN2_PIN, FALLING);
 
+    // Enable keyboard handling via interrupts (pin 1 on port G)
+    // XXX: Need to enable pull-up for pin 1 too?
+    portG_conf(KB_PIN, EINT);
+    portG_conf_pup(KB_PIN, ENABLE);
+    portG_eint_trig(KB_PIN, FALLING);
+
+    // Set up timer 0 to fire every 2s
+    // We need a prescaler value of 255, and a divider of 8
+    setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
     if (RL.moving) {
         tmr_start(TIMER0);
     }
 
-    // TODO: Register ISR
-    // pISR_TIMER0 = ...
-    // pISR_EINT4567 = ...
-    // pISR_EINT1 = ...
+    // Register ISR for keyboard (EINT1) and timer (TIMER0)
+    pISR_EINT1 = (int) keyboard_ISR;
+    pISR_TIMER0 = (int) timer_ISR;
 
+    // Register ISR for buttons (shared ISR for lines 4, 5, 6 and 7)
+    // Will need to determine if buttons were pressed inside button_ISR
+    // This is done reading the EXTINTPND[3:0] register
+    pISR_EINT4567 = (int) button_ISR;
+
+    // Reset Interrupt Controller to default configuration
     ic_init();
 
     // TODO: Set up interrupt lines (using intcontroller.h API)
