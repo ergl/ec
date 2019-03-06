@@ -130,16 +130,20 @@ void keyboard_ISR(void) {
 
     switch (key) {
         case 0:
-            // TODO: Set timer 0: freq 2s, count 62500, div 1/8
+            // Set timer 0: freq 2s, presc 255, count 62500, div 1/8
+            setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
             break;
         case 1:
-            // TODO: Set timer 0: freq 1s, count 31250, div 1/8
+            // Set timer 0: freq 1s, presc 255, count 31250, div 1/8
+            setup_timer(TIMER0, 255, D1_8, 31250, RELOAD);
             break;
         case 2:
-            // TODO: Set timer 0: freq 0.5s, count 15625, div 1/8
+            // Set timer 0: freq 0.5s, presc 255, count 15625, div 1/8
+            setup_timer(TIMER0, 255, D1_8, 15625, RELOAD);
             break;
         case 3:
-            // TODO: Set timer 0: freq 0.25s, count 15625, div 1/4
+            // Set timer 0: freq 0.25s, presc 255, count 15625, div 1/4
+            setup_timer(TIMER0, 255, D1_4, 15625, RELOAD);
             break;
         default:
             break;
