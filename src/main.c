@@ -65,11 +65,12 @@ void timer_ISR(void) {
 }
 
 void button_ISR(void) {
-    unsigned int whicheint = rEXTINTPND;
-    unsigned int buttons = (whicheint >> 2) & 0x3;
+    // EXTINTPND is a 4-bit register, telling which lines are active
+    // This ISR is shared by lines 4, 5, 6 and 7
+    unsigned int which_eint_line = rEXTINTPND;
 
-    // FIXME: Need to check which button was pressed?
-    // unsigned int buttons = read_button();
+    // Get the two MS bits
+    unsigned int buttons = (which_eint_line >> 2) & 0x3;
 
     // Push button 1 was pressed
     if (buttons & BUT1) {
@@ -100,15 +101,16 @@ void button_ISR(void) {
     // Wait for debounce
     Delay(2000);
 
-    // Clean extintpnd flag
-    // TODO: We must clear the pending interrupt flag in rEXTINTPND
-    // Write 1 on the flags we want to clear (the ones corresponding to the
-    // buttons that were pushed)
+    // Clean ISR flags
 
-    // TODO
-    // rEXTINTPND = ...
+    // Because the ISR is shared, first clear the line flag
+    // on EXTINTPND[3:2]. We must write a '1' to that bit to clear it
+    // `buttons` can be 01, 10 or 11 (one, other, or either)
+    // This should write buttons to rEXTINTPND[3:2]
+    rEXTINTPND |= (buttons << 2);
 
-    // TODO: Clear interrupt flag on the interrupt controller ?
+    // Now clear the flag on the interrupt controller
+    ic_cleanflag(INT_EINT4567);
 }
 
 void keyboard_ISR(void) {
@@ -216,7 +218,7 @@ int setup(void) {
 
     // Enable button handling via interrupts (pins 6 and 7)
     // * Enable pin mode to EINT
-    // * Set up pull-up registry (XXX: needed?)
+    // * Set up pull-up registry
     // * Set up interrupt mode for that pin
     portG_conf(BTTN1_PIN, EINT);
     portG_conf_pup(BTTN1_PIN, ENABLE);
@@ -227,7 +229,7 @@ int setup(void) {
     portG_eint_trig(BTTN2_PIN, FALLING);
 
     // Enable keyboard handling via interrupts (pin 1 on port G)
-    // XXX: Need to enable pull-up for pin 1 too?
+    // XXX: Need to enable pull-up for keyboard pin?
     portG_conf(KB_PIN, EINT);
     portG_conf_pup(KB_PIN, ENABLE);
     portG_eint_trig(KB_PIN, FALLING);
