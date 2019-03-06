@@ -3,16 +3,21 @@
 #include "intcontroller.h"
 
 // Default controller configuration
-// IRQ and FIQ lines disabled
-// IRQ in non-vectorized mode
-// All interrupts go through IRQ
-// All interrupts disabled
 void ic_init(void) {
-    // Set all lines to IRQ
+    // INTMOD is Interrupt Mode Register
+    // Reset to default value (0b00...00)
+    // All interrupts are handled as IRQ
     rINTMOD = 0x0;
-    // IRQ and FIQ masked, (IRQ in non-vectorized mode)
+
+    // INTCON is the control register for the controller
+    // Reset to default value (0b0111)
+    // Non-vectorized mode
+    // IRQ and FIQ disabled
     rINTCON = 0x7;
-    // Mask all lines
+
+    // INTMSK is Interrupt Mask Register
+    // Reset value is 0x07FF_FFFF, but all 1s is ok too
+    // Bit per-line. When set to 1, line is masked
     rINTMSK = ~(0x0);
 }
 

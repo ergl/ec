@@ -82,6 +82,7 @@ int portG_conf(int pin, enum port_mode mode) {
 // EXTING is a 30bit register (single-address),
 // where each of the 8 pins are given 3 bits in 4-bit increments
 // (each pin is at the pin*4-th bit)
+// TODO: Implement
 int portG_eint_trig(int pin, enum trigger trig) {
     int pos = pin * 4;
 
