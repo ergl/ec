@@ -62,7 +62,8 @@ void timer_ISR(void) {
     // Redraw
     D8Led_segment(RL.position);
 
-    // TODO Need to clear the pending flag
+    // Need to clear the pending flag
+    ic_cleanflag(INT_TIMER0);
 }
 
 void button_ISR(void) {
@@ -116,6 +117,7 @@ void button_ISR(void) {
 
 void keyboard_ISR(void) {
     int key;
+    enum digital key_state;
 
     // Wait for debounce
     Delay(200);
@@ -125,7 +127,7 @@ void keyboard_ISR(void) {
         goto exit_kb_isr;
     }
 
-    // TODO: Display key on the 8-segment display (using API on D8Led)
+    D8Led_digit(key);
 
     switch (key) {
         case 0:
@@ -148,17 +150,24 @@ void keyboard_ISR(void) {
             break;
     }
 
-    // TODO: Wait until key is depressed
-    // See outline, page 5
-    while ( /* TODO: True when key is depressed */ ) {
-        // Active wait
-    }
+    // Wait until key is depressed
+    // When LOW -> key is pressed, interrupt is being generated
+    // When HIGH -> key is depressed (interrupt is cleared)
+    do {
+        // FIXME: LOW or HIGH?
+        // FIXME: Is KB_PIN a functional pin?
+        // Docs say: When the port is configured as a functional pin,
+        // the undefined value will be read
+        // FIXME: Compatible with EINT pin?
+        portG_read(KB_PIN, &key_state);
+    } while(key_state == LOW);
 
 exit_kb_isr:
     // Wait for debounce
     Delay(200);
 
-    // TODO: Clear pending interrupts on line EINT1 (rI_ISPC register)
+    // Clear pending interrupts on line EINT1
+    ic_cleanflag(INT_EINT1);
 }
 
 // XXX: To update mode and prescaler, do we need to restart?

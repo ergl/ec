@@ -145,6 +145,7 @@ int portG_write(int pin, enum digital val) {
     return 0;
 }
 
+// Read the value in `pin` into `val`
 int portG_read(int pin, enum digital* val) {
     int pos = pin*2;
 
