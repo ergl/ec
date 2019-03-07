@@ -99,7 +99,7 @@ int setup_timer(enum tmr_timer t,
 void timer_ISR(void) {
     // If it's not moving, no need to redraw
     if (!RL.moving) {
-        return;
+        goto cleanup_timer_isr;
     }
 
     if (RL.direction) {
@@ -111,6 +111,7 @@ void timer_ISR(void) {
     // Redraw
     D8Led_segment(RL.position);
 
+cleanup_timer_isr:
     // Need to clear the pending flag
     ic_cleanflag(INT_TIMER0);
 }
