@@ -32,7 +32,7 @@ int tmr_set_prescaler(int p, int value) {
 
 // Set the divider `d` to the given value `div_v`
 int tmr_set_divider(int d, enum tmr_div div_v) {
-    int offset = d * 4
+    int offset = d * 4;
 
     int invalid_timer = (d < 0 || d > 5);
     int invalid_divisor = (div_v == D1_32 && d > 3) ||
@@ -101,7 +101,7 @@ int tmr_set_count(enum tmr_timer t, int count, int cmp) {
              break;
         case TIMER5:
             rTCNTB5 = count;
-            rTCMPB5 = cmp;
+            // Timer 5 doesn't have a CMP register
              break;
         default:
             return -1;
