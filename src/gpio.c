@@ -77,43 +77,50 @@ int portG_conf(int pin, enum port_mode mode) {
     return 0;
 }
 
-// We also find the External Interrupt conf on the port G,
-// particularly, on the EXTINT register.
-// EXTING is a 30bit register (single-address),
-// where each of the 8 pins are given 3 bits in 4-bit increments
-// (each pin is at the pin*4-th bit)
-// TODO: Implement
+// Configure the given pin on interrupt mode `trig`
 int portG_eint_trig(int pin, enum trigger trig) {
-    int pos = pin * 4;
+    int value;
 
+    // The External Interrupt conf is located on the port G,
+    // particularly, on the EXTINT register.
+    // EXTINT is a 32bit register (single-address),
+    // divided in 8 4-bit zones (but only the 3 LSB in each zone are used)
+    // (each pin is at the pin*4-th bit)
+
+    int offset = pin * 4;
     if (pin < 0 || pin > 7) {
         return -1;
     }
 
     switch (trig) {
         case LLOW:
-            // TODO: write on rEXTINT after `pos` 3 bits to 000
-            // This sets the interrupt to low
+            value = 0x0;
             break;
         case LHIGH:
-            // TODO: write on rEXTINT after `pos` 3 bits to 001
-            // This sets the interrupt to high
+            value = 0x1;
             break;
         case FALLING:
-            // TODO: write on rEXTINT after `pos` 3 bits to 01X
-            // This sets the interrupt to falling edge
+            // Write 01X
+            // Could be 2 or 3, LSB is don't care
+            value = 0x2;
             break;
         case RISING:
-            // TODO: write on rEXTINT after `pos` 3 bits to 10X
-            // This sets the interrupt to rising edge
+            // Write 10X
+            // Could be 4 or 5, LSB is don't care
+            value = 0x4;
             break;
         case EDGE:
-            // TODO: write on rEXTINT after `pos` 3 bits to 11X
-            // This sets the interrupt to falling/rising edge
+            // Write 11X
+            // Could be 6 or 6, LSB is don't care
+            value = 0x6;
             break;
         default:
             return -1;
     }
+
+    rEXTINT = ( (rEXTINT & ~(0xF << offset)) // Zero-out the target bits
+              | (value << offset) // Then flip to 1 those in `mask`
+              );
 
     return 0;
 }
