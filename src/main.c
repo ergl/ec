@@ -46,6 +46,55 @@ void timer_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void button_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
 
+// XXX: To update mode and prescaler, do we need to restart?
+// Setup timer `t` with the given values
+int setup_timer(enum tmr_timer t,
+                int prescaler_value,
+                enum tmr_div div_value,
+                int timer_count,
+                enum tmr_mode mode) {
+
+
+    int prescaler_p;
+
+    // Divider is the same as the timer
+    int divider_p = (int) t;
+
+    // Set timer mode
+    if (tmr_set_mode(t, mode) != 0) {
+        return -1;
+    }
+
+    // Set count and cmp registers
+    if (tmr_set_count(t, timer_count, TMR_CMP) != 0) {
+        return -1;
+    }
+
+    // Set divider value
+    if (tmr_set_divider(divider_p, div_value) != 0) {
+        return -1;
+    }
+
+    // Which prescaler should we use?
+    // Prescaler are shared every two timers
+    if (t == TIMER0 || t == TIMER1) {
+        prescaler_p = 0;
+    } else if (t == TIMER2 || t == TIMER3) {
+        prescaler_p = 1;
+    } else if (t == TIMER4 || t == TIMER5) {
+        prescaler_p = 2;
+    } else {
+        return -1;
+    }
+
+    if (tmr_set_prescaler(prescaler_p, prescaler_value) != 0) {
+        return -1;
+    }
+
+    // Flush the buffer registers and force-update the timer
+    return tmr_update(t);
+}
+
 // Timer ISR, implements drawing logic
 void timer_ISR(void) {
     // If it's not moving, no need to redraw
@@ -168,55 +217,6 @@ exit_kb_isr:
 
     // Clear pending interrupts on line EINT1
     ic_cleanflag(INT_EINT1);
-}
-
-// XXX: To update mode and prescaler, do we need to restart?
-// Setup timer `t` with the given values
-int setup_timer(enum tmr_timer t,
-                int prescaler_value,
-                enum tmr_div div_value,
-                int timer_count,
-                enum tmr_mode mode) {
-
-
-    int prescaler_p;
-
-    // Divider is the same as the timer
-    int divider_p = (int) t;
-
-    // Set timer mode
-    if (tmr_set_mode(t, mode) != 0) {
-        return -1;
-    }
-
-    // Set count and cmp registers
-    if (tmr_set_count(t, timer_count, TMR_CMP) != 0) {
-        return -1;
-    }
-
-    // Set divider value
-    if (tmr_set_divider(divider_p, div_value) != 0) {
-        return -1;
-    }
-
-    // Which prescaler should we use?
-    // Prescaler are shared every two timers
-    if (t == TIMER0 || t == TIMER1) {
-        prescaler_p = 0;
-    } else if (t == TIMER2 || t == TIMER3) {
-        prescaler_p = 1;
-    } else if (t == TIMER4 || t == TIMER5) {
-        prescaler_p = 2;
-    } else {
-        return -1;
-    }
-
-    if (tmr_set_prescaler(prescaler_p, prescaler_value) != 0) {
-        return -1;
-    }
-
-    // Flush the buffer registers and force-update the timer
-    return tmr_update(t);
 }
 
 int setup(void) {
