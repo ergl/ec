@@ -62,7 +62,7 @@ void timer_ISR(void) {
     // Redraw
     D8Led_segment(RL.position);
 
-    // XXX: Need to clear the pending flag?
+    // TODO Need to clear the pending flag
 }
 
 void button_ISR(void) {
@@ -85,7 +85,6 @@ void button_ISR(void) {
 
     if (buttons & BUT2) {
         // First, increment internal counter, and toggle led accordingly
-        // FIXME: Can we even update this from ISR context?
         // Might overflow? Swap to a boolean toggle
         button2_counter++;
         if (button2_counter & 1) {
@@ -162,6 +161,7 @@ exit_kb_isr:
     // TODO: Clear pending interrupts on line EINT1 (rI_ISPC register)
 }
 
+// XXX: To update mode and prescaler, do we need to restart?
 // Setup timer `t` with the given values
 int setup_timer(enum tmr_timer t,
                 int prescaler_value,
@@ -235,7 +235,7 @@ int setup(void) {
     portG_eint_trig(BTTN2_PIN, FALLING);
 
     // Enable keyboard handling via interrupts (pin 1 on port G)
-    // XXX: Need to enable pull-up for keyboard pin?
+    // Pull-up is not really needed for keyboard, but we might as well
     portG_conf(KB_PIN, EINT);
     portG_conf_pup(KB_PIN, ENABLE);
     portG_eint_trig(KB_PIN, FALLING);

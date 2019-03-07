@@ -2,6 +2,11 @@
 #include "44b.h"
 #include "timer.h"
 
+// Set the prescaler `p` to the given `value`
+// Each `p` is shared among two timers
+// p = 0 for timer 0 and 1
+// p = 1 for timer 2 and 3
+// p = 2 for timer 4 and 5
 int tmr_set_prescaler(int p, int value) {
     int offset = p*8;
     value &= 0xFF;
