@@ -155,11 +155,9 @@ void button_ISR(void) {
 
     // Clean ISR flags
 
-    // Because the ISR is shared, first clear the line flag
-    // on EXTINTPND[3:2]. We must write a '1' to that bit to clear it
-    // `buttons` can be 01, 10 or 11 (one, other, or either)
-    // This should write buttons to rEXTINTPND[3:2]
-    rEXTINTPND |= (buttons << 2);
+    // Write back the default value
+    // XXX: Check this
+    rEXTINTPND = which_eint_line;
 
     // Now clear the flag on the interrupt controller
     ic_cleanflag(INT_EINT4567);
@@ -294,6 +292,11 @@ int setup(void) {
     ic_enable(INT_TIMER0);
     ic_enable(INT_EINT4567);
     ic_enable(INT_EINT1);
+
+    // Finally, unmask the global register
+    // If disabled, no interrupt will be serviced, even
+    // if the individual line is enabled
+    ic_enable(INT_GLOBAL);
 
     // ------------------------------------------------------------
     // Calibrate timer
