@@ -32,7 +32,7 @@ struct RLstat {
 };
 
 static struct RLstat RL = {
-    .moving = 0,
+    .moving = 1,
     .speed = 5,
     .direction = 0,
     .position = 0,
@@ -47,6 +47,9 @@ void button_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
 
 // XXX: To update mode and prescaler, do we need to restart?
+// Not really, but if we do so, the changes will be visible as soon as we update,
+// and not only on the next timer cycle.
+
 // Setup timer `t` with the given values
 int setup_timer(enum tmr_timer t,
                 int prescaler_value,
@@ -156,7 +159,6 @@ void button_ISR(void) {
     // Clean ISR flags
 
     // Write back the default value
-    // XXX: Check this
     rEXTINTPND = which_eint_line;
 
     // Now clear the flag on the interrupt controller
