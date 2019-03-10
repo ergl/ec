@@ -11,6 +11,7 @@ volatile static unsigned char *keyboard_base = (unsigned char *)0x06000000;
 int kb_scan(void) {
     int i;
     char temp;
+    char last_part;
     int value = -1;
     // Line addresses
     // Given in 8 bit offsets after keyboard_base
@@ -26,14 +27,19 @@ int kb_scan(void) {
         temp = *(keyboard_base+lines[i]);
 
         // The returned value is not the 0x0F (no key pressed)
-        // TODO: Should bail out after first key match?
-        if ((temp & KEY_VALUE_MASK) != KEY_VALUE_MASK) {
-            // TODO: Check the returned key in the appropriate bit in temp
-            // | Bit (Set to 0) | Key
-            // |        1       | keymap[i][3]
-            // |        2       | keymap[i][2]
-            // |        3       | keymap[i][1]
-            // |        4       | keymap[i][0]
+        last_part = (temp & KEY_VALUE_MASK);
+        if (last_part != KEY_VALUE_MASK) {
+            if (last_part == 0xE) {
+                value = keymap[i][3];
+            } else if (last_part == 0xD) {
+                value = keymap[i][2];
+            } else if (last_part == 0xB) {
+                value = keymap[i][1];
+            } else if (last_part == 0x7) {
+                value = keymap[i][0];
+            } else {
+                continue;
+            }
         }
     }
 
