@@ -31,18 +31,24 @@ struct RLstat {
     int position;
 };
 
-static struct RLstat RL = {
+static struct RLstat RL_1 = {
     .moving = 1,
     .speed = 5,
     .direction = 0,
-    .position = 0,
+    .position = 0
 };
 
-// Keep track of button 2 press events
-static unsigned int button2_counter = 0;
+static struct RLstat RL_2 = {
+    .moving = 1,
+    .speed = 5,
+    .direction = 0,
+    .position = 1
+};
 
 // ISR functions
-void timer_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void timer0_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void timer1_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void timer2_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void button_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
 
@@ -99,24 +105,49 @@ int setup_timer(enum tmr_timer t,
 }
 
 // Timer ISR, implements drawing logic
-void timer_ISR(void) {
+void timer0_ISR(void) {
     // If it's not moving, no need to redraw
-    if (!RL.moving) {
-        goto cleanup_timer_isr;
+    if (!RL_1.moving) {
+        goto cleanup_timer_0_isr;
     }
 
-    if (RL.direction) {
-        RL.position = modulo(RL.position + 1, 6);
+    if (RL_1.direction) {
+        RL_1.position = modulo(RL_1.position + 1, 6);
     } else {
-        RL.position = modulo(RL.position - 1, 6);
+        RL_1.position = modulo(RL_1.position - 1, 6);
     }
 
     // Redraw
-    D8Led_segment(RL.position);
+    D8Led_2segments(RL_1.position, RL_2.position);
 
-cleanup_timer_isr:
+cleanup_timer_0_isr:
     // Need to clear the pending flag
     ic_cleanflag(INT_TIMER0);
+}
+
+void timer1_ISR(void) {
+    // If it's not moving, no need to redraw
+    if (!RL_2.moving) {
+        goto cleanup_timer_1_isr;
+    }
+
+    if (RL_2.direction) {
+        RL_2.position = modulo(RL_2.position + 1, 6);
+    } else {
+        RL_2.position = modulo(RL_2.position - 1, 6);
+    }
+
+    // Redraw
+    D8Led_2segments(RL_1.position, RL_2.position);
+
+cleanup_timer_1_isr:
+    // Need to clear the pending flag
+    ic_cleanflag(INT_TIMER1);
+}
+
+void timer2_ISR(void) {
+    leds_switch();
+    ic_cleanflag(INT_TIMER2);
 }
 
 void button_ISR(void) {
@@ -129,28 +160,11 @@ void button_ISR(void) {
 
     // Push button 1 was pressed
     if (buttons & BUT1) {
-        // First, turn off both LEDs
-        led1_off();
-        led2_off();
-
-        // Toggle RL direction
-        RL.direction = !RL.direction;
+        RL_1.moving = !RL_1.moving;
     }
 
     if (buttons & BUT2) {
-        // First, increment internal counter, and toggle led accordingly
-        // Might overflow? Swap to a boolean toggle
-        button2_counter++;
-        if (button2_counter & 1) {
-            // Odd, toggle LED 2
-            led2_switch();
-        } else {
-            // Even, toggle LED 1
-            led1_switch();
-        }
-
-        // Then, toggle RL.moving
-        RL.moving = !RL.moving;
+        RL_2.moving = !RL_2.moving;
     }
 
     // Wait for debounce
@@ -196,6 +210,54 @@ void keyboard_ISR(void) {
             // Set timer 0: freq 0.25s, presc 255, count 15625, div 1/4
             setup_timer(TIMER0, 255, D1_4, 15625, RELOAD);
             break;
+        case 4:
+            // Set timer 1: freq 2s, presc 255, count 62500, div 1/8
+            setup_timer(TIMER1, 255, D1_8, 62500, RELOAD);
+            break;
+        case 5:
+            // Set timer 1: freq 1s, presc 255, count 31250, div 1/8
+            setup_timer(TIMER1, 255, D1_8, 31250, RELOAD);
+            break;
+        case 6:
+            // Set timer 1: freq 0.5s, presc 255, count 15625, div 1/8
+            setup_timer(TIMER1, 255, D1_8, 15625, RELOAD);
+            break;
+        case 7:
+            // Set timer 1: freq 0.25s, presc 255, count 15625, div 1/4
+            setup_timer(TIMER1, 255, D1_4, 15625, RELOAD);
+            break;
+        case 8:
+            leds_display(0x3);
+            // Set timer 2: freq 2s, presc 255, count 62500, div 1/8
+            setup_timer(TIMER2, 255, D1_8, 62500, ONE_SHOT);
+            if (tmr_isrunning(TIMER2)) {
+                tmr_stop(TIMER2);
+            }
+            tmr_start(TIMER2);
+            break;
+        case 9:
+            leds_display(0x3);
+            // Set timer 2: freq 1s, presc 255, count 31250, div 1/8
+            setup_timer(TIMER2, 255, D1_8, 31250, ONE_SHOT);
+            if (tmr_isrunning(TIMER2)) {
+                tmr_stop(TIMER2);
+            }
+            tmr_start(TIMER2);
+            break;
+        case 10:
+            leds_display(0x3);
+            setup_timer(TIMER2, 255, D1_8, 15625, RELOAD);
+            if (!tmr_isrunning(TIMER2)) {
+                tmr_start(TIMER2);
+            }
+            break;
+        case 11:
+            leds_display(0x0);
+            // Stops timer 2 if running
+            if (tmr_isrunning(TIMER2)) {
+                tmr_stop(TIMER2)
+            }
+            break;
         default:
             break;
     }
@@ -223,7 +285,7 @@ int setup(void) {
 
     // Initialize and light up appropriate segment
     D8Led_init();
-    D8Led_segment(RL.position);
+    D8Led_2segments(RL_1.position, RL_2.position);
 
     // ------------------------------------------------------------
     // Port G configuration
@@ -254,8 +316,13 @@ int setup(void) {
     // Set up timer 0 to fire every 2s
     // We need a prescaler value of 255, and a divider of 8
     setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
-    if (RL.moving) {
+    setup_timer(TIMER1, 255, D1_8, 62500, RELOAD);
+    if (RL_1.moving) {
         tmr_start(TIMER0);
+    }
+
+    if (RL_2.moving) {
+        tmr_start(TIMER1);
     }
 
     // ------------------------------------------------------------
@@ -264,7 +331,9 @@ int setup(void) {
 
     // Register ISR for keyboard (EINT1) and timer (TIMER0)
     pISR_EINT1 = (int) keyboard_ISR;
-    pISR_TIMER0 = (int) timer_ISR;
+    pISR_TIMER0 = (int) timer0_ISR;
+    pISR_TIMER1 = (int) timer1_ISR;
+    pISR_TIMER2 = (int) timer2_ISR;
 
     // Register ISR for buttons (shared ISR for lines 4, 5, 6 and 7)
     // Will need to determine if buttons were pressed inside button_ISR
@@ -284,11 +353,15 @@ int setup(void) {
 
     // Configure timer, push buttons keyboard lines in IRQ
     ic_conf_line(INT_TIMER0, IRQ);
+    ic_conf_line(INT_TIMER1, IRQ);
+    ic_conf_line(INT_TIMER2, IRQ);
     ic_conf_line(INT_EINT4567, IRQ); // Buttons
     ic_conf_line(INT_EINT1, IRQ); // Keyboard
 
     // Enable timer, push buttons and keyboard lines
     ic_enable(INT_TIMER0);
+    ic_enable(INT_TIMER1);
+    ic_enable(INT_TIMER2);
     ic_enable(INT_EINT4567);
     ic_enable(INT_EINT1);
 

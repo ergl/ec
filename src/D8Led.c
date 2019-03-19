@@ -90,6 +90,19 @@ void D8Led_segment(int value) {
     }
 }
 
+void D8Led_2segments(int value0, int value1) {
+    if ((value0 < 0) || (value0 >= 8)) {
+        return;
+    }
+
+    if ((value1 < 0) || (value1 >= 8)) {
+        return;
+    }
+
+    int target = (Segments[value0] | Segments[value1]);
+    LED8ADDR = ~ target;
+}
+
 void D8Led_digit(int value) {
     if ((value >= 0) && (value < 16)) {
         LED8ADDR = ~ Digits[value];
