@@ -17,6 +17,15 @@
 // Default timer CMP register value
 #define TMR_CMP 1
 
+// Timer helper methods
+enum tmr_seconds {
+    TWO_SECS = 0,
+    ONE_SEC = 1,
+    HALF_SEC = 2,
+    QUARTER_SEC = 3
+};
+
+// Main program state
 struct RLstat {
     // 0 -> still, 1 -> moving
     int moving;
@@ -102,6 +111,40 @@ int setup_timer(enum tmr_timer t,
 
     // Flush the buffer registers and force-update the timer
     return tmr_update(t);
+}
+
+int set_timer_to(enum tmr_timer t, enum tmr_seconds seconds, enum tmr_mode mode) {
+    int timer_count;
+    int prescaler_value = 255;
+    enum tmr_div div_value;
+
+    // Valid second definition?
+    if (seconds < 0 || seconds > 3) {
+        return -1;
+    }
+
+    if (seconds == QUARTER) {
+        div_value = D1_4;
+    } else {
+        div_value = D1_8;
+    }
+
+    switch (seconds) {
+        case TWO_SECS:
+            timer_count = 62500;
+            break;
+        case ONE_SEC:
+            timer_count = 31250;
+            break;
+        case HALF_SEC: // Fall-through
+        case QUARTER_SEC:
+            timer_count = 15625;
+            break;
+        default:
+            return -1;
+    }
+
+    return setup_timer(t, prescaler_value, div_value, timer_count, mode);
 }
 
 // Timer ISR, implements drawing logic
@@ -195,41 +238,32 @@ void keyboard_ISR(void) {
 
     switch (key) {
         case 0:
-            // Set timer 0: freq 2s, presc 255, count 62500, div 1/8
-            setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
+            set_timer_to(TIMER0, TWO_SECS, RELOAD);
             break;
         case 1:
-            // Set timer 0: freq 1s, presc 255, count 31250, div 1/8
-            setup_timer(TIMER0, 255, D1_8, 31250, RELOAD);
+            set_timer_to(TIMER0, ONE_SEC, RELOAD);
             break;
         case 2:
-            // Set timer 0: freq 0.5s, presc 255, count 15625, div 1/8
-            setup_timer(TIMER0, 255, D1_8, 15625, RELOAD);
+            set_timer_to(TIMER0, HALF_SEC, RELOAD);
             break;
         case 3:
-            // Set timer 0: freq 0.25s, presc 255, count 15625, div 1/4
-            setup_timer(TIMER0, 255, D1_4, 15625, RELOAD);
+            set_timer_to(TIMER0, QUARTER_SEC, RELOAD);
             break;
         case 4:
-            // Set timer 1: freq 2s, presc 255, count 62500, div 1/8
-            setup_timer(TIMER1, 255, D1_8, 62500, RELOAD);
+            set_timer_to(TIMER1, TWO_SECS, RELOAD);
             break;
         case 5:
-            // Set timer 1: freq 1s, presc 255, count 31250, div 1/8
-            setup_timer(TIMER1, 255, D1_8, 31250, RELOAD);
+            set_timer_to(TIMER1, ONE_SEC, RELOAD);
             break;
         case 6:
-            // Set timer 1: freq 0.5s, presc 255, count 15625, div 1/8
-            setup_timer(TIMER1, 255, D1_8, 15625, RELOAD);
+            set_timer_to(TIMER1, HALF_SEC, RELOAD);
             break;
         case 7:
-            // Set timer 1: freq 0.25s, presc 255, count 15625, div 1/4
-            setup_timer(TIMER1, 255, D1_4, 15625, RELOAD);
+            set_timer_to(TIMER1, QUARTER_SEC, RELOAD);
             break;
         case 8:
             leds_display(0x3);
-            // Set timer 2: freq 2s, presc 255, count 62500, div 1/8
-            setup_timer(TIMER2, 255, D1_8, 62500, ONE_SHOT);
+            set_timer_to(TIMER2, TWO_SECS, ONE_SHOT);
             if (tmr_isrunning(TIMER2)) {
                 tmr_stop(TIMER2);
             }
@@ -237,8 +271,7 @@ void keyboard_ISR(void) {
             break;
         case 9:
             leds_display(0x3);
-            // Set timer 2: freq 1s, presc 255, count 31250, div 1/8
-            setup_timer(TIMER2, 255, D1_8, 31250, ONE_SHOT);
+            set_timer_to(TIMER2, ONE_SEC, ONE_SHOT);
             if (tmr_isrunning(TIMER2)) {
                 tmr_stop(TIMER2);
             }
@@ -246,7 +279,7 @@ void keyboard_ISR(void) {
             break;
         case 10:
             leds_display(0x3);
-            setup_timer(TIMER2, 255, D1_8, 15625, RELOAD);
+            set_timer_to(TIMER2, HALF_SEC, RELOAD);
             if (!tmr_isrunning(TIMER2)) {
                 tmr_start(TIMER2);
             }
