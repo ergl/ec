@@ -55,11 +55,14 @@ static struct RLstat RL_2 = {
 };
 
 // ISR functions
-void timer0_ISR(void) __attribute__ ((interrupt ("IRQ")));
-void timer1_ISR(void) __attribute__ ((interrupt ("IRQ")));
-void timer2_ISR(void) __attribute__ ((interrupt ("IRQ")));
+void timer_fiq_ISR(void) __attribute__ ((interrupt ("FIQ")));
 void button_ISR(void) __attribute__ ((interrupt ("IRQ")));
 void keyboard_ISR(void) __attribute__ ((interrupt ("IRQ")));
+
+// Function definitions
+void timer0_handler(void);
+void timer1_handler(void);
+void timer2_handler(void);
 
 // XXX: To update mode and prescaler, do we need to restart?
 // Not really, but if we do so, the changes will be visible as soon as we update,
@@ -147,11 +150,25 @@ int set_timer_to(enum tmr_timer t, enum tmr_seconds seconds, enum tmr_mode mode)
     return setup_timer(t, prescaler_value, div_value, timer_count, mode);
 }
 
+void timer_fiq_ISR(void) {
+    unsigned int which_fiq_line = rINTPND;
+    if (which_fiq_line & (0x1 << INT_TIMER0)) {
+        timer0_handler();
+        ic_cleanflag(INT_TIMER0);
+    } else if (which_fiq_line & (0x1 << INT_TIMER1)) {
+        timer1_handler();
+        ic_cleanflag(INT_TIMER1);
+    } else if (which_fiq_line & (0x1 << INT_TIMER2)) {
+        timer2_handler();
+        ic_cleanflag(INT_TIMER2);
+    }
+}
+
 // Timer ISR, implements drawing logic
-void timer0_ISR(void) {
+void timer0_handler(void) {
     // If it's not moving, no need to redraw
     if (!RL_1.moving) {
-        goto cleanup_timer_0_isr;
+        return;
     }
 
     if (RL_1.direction) {
@@ -162,16 +179,12 @@ void timer0_ISR(void) {
 
     // Redraw
     D8Led_2segments(RL_1.position, RL_2.position);
-
-cleanup_timer_0_isr:
-    // Need to clear the pending flag
-    ic_cleanflag(INT_TIMER0);
 }
 
-void timer1_ISR(void) {
+void timer1_handler(void) {
     // If it's not moving, no need to redraw
     if (!RL_2.moving) {
-        goto cleanup_timer_1_isr;
+        return;
     }
 
     if (RL_2.direction) {
@@ -182,15 +195,10 @@ void timer1_ISR(void) {
 
     // Redraw
     D8Led_2segments(RL_1.position, RL_2.position);
-
-cleanup_timer_1_isr:
-    // Need to clear the pending flag
-    ic_cleanflag(INT_TIMER1);
 }
 
-void timer2_ISR(void) {
+void timer2_handler(void) {
     leds_switch();
-    ic_cleanflag(INT_TIMER2);
 }
 
 void button_ISR(void) {
@@ -362,11 +370,11 @@ int setup(void) {
     // Set up ISR handlers
     // ------------------------------------------------------------
 
-    // Register ISR for keyboard (EINT1) and timer (TIMER0)
+    // Register ISR for timers (using FIQ)
+    pISR_FIQ = (int) timer_fiq_ISR;
+
+    // Register ISR for keyboard (EINT1)
     pISR_EINT1 = (int) keyboard_ISR;
-    pISR_TIMER0 = (int) timer0_ISR;
-    pISR_TIMER1 = (int) timer1_ISR;
-    pISR_TIMER2 = (int) timer2_ISR;
 
     // Register ISR for buttons (shared ISR for lines 4, 5, 6 and 7)
     // Will need to determine if buttons were pressed inside button_ISR
@@ -381,13 +389,13 @@ int setup(void) {
     ic_init();
 
     // Keep FIQ disabled and enable IRQ in vectorized mode
-    ic_conf_fiq(DISABLE);
+    ic_conf_fiq(ENABLE);
     ic_conf_irq(ENABLE, VEC);
 
-    // Configure timer, push buttons keyboard lines in IRQ
-    ic_conf_line(INT_TIMER0, IRQ);
-    ic_conf_line(INT_TIMER1, IRQ);
-    ic_conf_line(INT_TIMER2, IRQ);
+    // Configure push buttons keyboard lines in IRQ, timers in FIQ
+    ic_conf_line(INT_TIMER0, FIQ);
+    ic_conf_line(INT_TIMER1, FIQ);
+    ic_conf_line(INT_TIMER2, FIQ);
     ic_conf_line(INT_EINT4567, IRQ); // Buttons
     ic_conf_line(INT_EINT1, IRQ); // Keyboard
 
