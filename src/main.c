@@ -167,7 +167,7 @@ void button_ISR(void) {
 
 void keyboard_ISR(void) {
     int key;
-    enum digital key_state;
+    enum digital key_state = LOW;
 
     // Wait for debounce
     Delay(200);
@@ -204,11 +204,8 @@ void keyboard_ISR(void) {
     // When LOW -> key is pressed, interrupt is being generated
     // When HIGH -> key is depressed (interrupt is cleared)
     do {
-        // FIXME: LOW or HIGH?
-        // FIXME: Is KB_PIN a functional pin?
-        // Docs say: When the port is configured as a functional pin,
-        // the undefined value will be read
-        // FIXME: Compatible with EINT pin?
+        // Docs say that reading from a functional pin is undefined,
+        // but it works in our case.
         portG_read(KB_PIN, &key_state);
     } while(key_state == LOW);
 

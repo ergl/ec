@@ -155,13 +155,19 @@ int portG_write(int pin, enum digital val) {
 // Read the value in `pin` into `val`
 int portG_read(int pin, enum digital* val) {
     int pos = pin*2;
+    unsigned int pin_mode;
 
     if (pin < 0 || pin > 7) {
         return -1;
     }
 
     // If not in input mode (00), bail out
-    if (rPCONG & (0x3 << pos)) {
+    pin_mode = (rPCONG & (0x3 << pos));
+    int input_mode = (pin_mode == 0x0);
+    int eint_mode = (pin_mode == (0x3 << pos));
+
+    // If not in input mode (00) or eint_mode (11), bail out
+    if (!input_mode && !eint_mode) {
         return -1;
     }
 
