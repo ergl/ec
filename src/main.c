@@ -126,7 +126,7 @@ int set_timer_to(enum tmr_timer t, enum tmr_seconds seconds, enum tmr_mode mode)
         return -1;
     }
 
-    if (seconds == QUARTER) {
+    if (seconds == QUARTER_SEC) {
         div_value = D1_4;
     } else {
         div_value = D1_8;
@@ -296,7 +296,7 @@ void keyboard_ISR(void) {
             leds_display(0x0);
             // Stops timer 2 if running
             if (tmr_isrunning(TIMER2)) {
-                tmr_stop(TIMER2)
+                tmr_stop(TIMER2);
             }
             break;
         default:
