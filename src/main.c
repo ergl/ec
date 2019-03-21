@@ -151,7 +151,7 @@ int set_timer_to(enum tmr_timer t, enum tmr_seconds seconds, enum tmr_mode mode)
 }
 
 void timer_fiq_ISR(void) {
-    unsigned int which_fiq_line = rINTPND;
+    unsigned int which_fiq_line = rINTPND & rINTMOD;
     if (which_fiq_line & (0x1 << INT_TIMER0)) {
         timer0_handler();
         ic_cleanflag(INT_TIMER0);
