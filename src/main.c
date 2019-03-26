@@ -157,20 +157,21 @@ void timer_ISR(void) {
     // Keep track of index to print
     static int current_pos = 0;
 
+    // Pop a value from the buffer, and push it into the target buffer.
+    // Display it, and advance the pointer
+    ring_get(&ring_buffer, &data);
+    D8Led_digit(data);
+    if (target_buffer != NULL) {
+        target_buffer[current_pos] = data;
+    }
+
+    ++current_pos;
+
     // If done, stop the timer, and signal end of show
     if (current_pos == show_watermark) {
         tmr_stop(TIMER0);
         current_pos = 0;
         show_done = 1;
-    } else {
-        // Else, pop a value from the buffer, and push it into
-        // the target buffer. Display it, and advance the pointer
-        ring_get(&ring_buffer, &data);
-        if (target_buffer != NULL) {
-            target_buffer[current_pos] = data;
-        }
-        D8Led_digit(data);
-        ++current_pos;
     }
 
     // Need to clear the pending flag
@@ -240,10 +241,10 @@ int read_user_input() {
 
 // Print the contents of the buffer at 1 char/s
 // and push them into `target_buffer`
-void print_and_transfer() {
+void print_and_transfer(int watermark) {
     // Reset show_done and show_watermark
     show_done = 0;
-    show_watermark = BUF_SIZE;
+    show_watermark = watermark;
     // Start the timer (will be stopped from ISR)
     tmr_start(TIMER0);
     // show_done will be 1 when the time ISR stops printing
@@ -252,17 +253,17 @@ void print_and_transfer() {
 
 void print_password() {
     target_buffer = password_buf;
-    print_and_transfer();
+    print_and_transfer(BUF_SIZE);
 }
 
 void print_guess() {
     target_buffer = guess_buf;
-    print_and_transfer();
+    print_and_transfer(BUF_SIZE);
 }
 
 void print_result() {
     target_buffer = NULL;
-    print_and_transfer();
+    print_and_transfer(2);
 }
 
 int check_show_result() {
@@ -290,6 +291,9 @@ int check_show_result() {
 }
 
 int setup(void) {
+    // Init game state
+    game_state = INIT;
+
     // Initialize ring buffer
     ring_init(&ring_buffer, backing_buffer, BUF_SIZE);
 
