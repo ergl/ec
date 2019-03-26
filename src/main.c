@@ -14,6 +14,14 @@
 #define BTTN1_PIN 6
 #define BTTN2_PIN 7
 
+// Timer helper methods
+enum tmr_seconds {
+    TWO_SECS = 0,
+    ONE_SEC = 1,
+    HALF_SEC = 2,
+    QUARTER_SEC = 3
+};
+
 // Default timer CMP register value
 #define TMR_CMP 1
 
@@ -98,7 +106,40 @@ int setup_timer(enum tmr_timer t,
     return tmr_update(t);
 }
 
-// Timer ISR, implements drawing logic
+int set_timer_to(enum tmr_timer t, enum tmr_seconds seconds, enum tmr_mode mode) {
+    int timer_count;
+    int prescaler_value = 255;
+    enum tmr_div div_value;
+
+    // Valid second definition?
+    if (seconds < 0 || seconds > 3) {
+        return -1;
+    }
+
+    if (seconds == QUARTER_SEC) {
+        div_value = D1_4;
+    } else {
+        div_value = D1_8;
+    }
+
+    switch (seconds) {
+        case TWO_SECS:
+            timer_count = 62500;
+            break;
+        case ONE_SEC:
+            timer_count = 31250;
+            break;
+        case HALF_SEC: // Fall-through
+        case QUARTER_SEC:
+            timer_count = 15625;
+            break;
+        default:
+            return -1;
+    }
+
+    return setup_timer(t, prescaler_value, div_value, timer_count, mode);
+}
+
 void timer_ISR(void) {
     // If it's not moving, no need to redraw
     if (!RL.moving) {
@@ -252,8 +293,7 @@ int setup(void) {
     // ------------------------------------------------------------
 
     // Set up timer 0 to fire every 2s
-    // We need a prescaler value of 255, and a divider of 8
-    setup_timer(TIMER0, 255, D1_8, 62500, RELOAD);
+    set_timer_to(TIMER0, ONE_SEC, RELOAD);
     if (RL.moving) {
         tmr_start(TIMER0);
     }
