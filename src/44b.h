@@ -326,5 +326,7 @@ enum enable {
     ENABLE = 1
 };
 
+#define MCLK 64000000
+
 #endif /* __44B_H__ */
 

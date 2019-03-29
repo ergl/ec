@@ -34,15 +34,6 @@
 #define SEGMENT_G   0x01
 #define SEGMENT_P   0x10
 
-// According to official docs
-//   ======== (A)
-//  || (F)  || (B)
-//  ||      ||
-//   ======== (G)
-//  || (E)  || (C)
-//  ||      ||
-//   ======== (D) [] (P)
-
 // According to ucm guide
 //   ======== (A)
 //  || (G)  || (B)
@@ -52,8 +43,6 @@
 //  ||      ||
 //   ======== (D) [] (P)
 
-// All wrong? (according to board user guide)
-// Correct (according to ucm docs)
 #define DIGIT_0  ( SEGMENT_A | SEGMENT_B | SEGMENT_C | SEGMENT_D | SEGMENT_E | SEGMENT_G )
 #define DIGIT_1  ( SEGMENT_B | SEGMENT_C )
 #define DIGIT_2  ( SEGMENT_A | SEGMENT_B | SEGMENT_F | SEGMENT_E | SEGMENT_D )
@@ -66,7 +55,7 @@
 #define DIGIT_9  ( SEGMENT_A | SEGMENT_B | SEGMENT_C | SEGMENT_F | SEGMENT_G )
 #define DIGIT_A  ( SEGMENT_A | SEGMENT_B | SEGMENT_C | SEGMENT_E | SEGMENT_F | SEGMENT_G )
 #define DIGIT_B  ( SEGMENT_C | SEGMENT_D | SEGMENT_E | SEGMENT_F | SEGMENT_G )
-#define DIGIT_C  ( SEGMENT_D | SEGMENT_E | SEGMENT_F )
+#define DIGIT_C  ( SEGMENT_D | SEGMENT_E | SEGMENT_G | SEGMENT_A )
 #define DIGIT_D  ( SEGMENT_B | SEGMENT_C | SEGMENT_D | SEGMENT_E | SEGMENT_F )
 #define DIGIT_E  ( SEGMENT_A | SEGMENT_D | SEGMENT_E | SEGMENT_F | SEGMENT_G )
 #define DIGIT_F  ( SEGMENT_A | SEGMENT_E | SEGMENT_F | SEGMENT_G )
