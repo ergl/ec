@@ -21,5 +21,6 @@
 
 void Delay(int time);
 int modulo(int x, int n);
+char ascii2digit(char c);
 
 #endif
