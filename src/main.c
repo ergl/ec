@@ -8,10 +8,12 @@
 #include "gpio.h"
 #include "keyboard.h"
 #include "ring.h"
+#include "uart.h"
 
 // Pin macros
 #define KB_PIN 1
 #define BUF_SIZE 4
+#define READLINE_BUF_SIZE 128
 
 // Timer helper methods
 enum tmr_seconds {
@@ -23,6 +25,16 @@ enum tmr_seconds {
 
 // Default timer CMP register value
 #define TMR_CMP 1
+
+//  UART configuration
+struct ulconf uconf = {
+    .ired = OFF,
+    .par = NONE,
+    .stopb = ONE,
+    .wordlen = EIGHT,
+    .echo = ON,
+    .baud = 115200
+};
 
 // FSM state
 enum state {
@@ -36,12 +48,15 @@ enum state {
 // Global game state
 enum state game_state;
 
-// Password, guess and intermediate buffers
+// Password and guess buffers
 static char password_buf[BUF_SIZE];
 static char guess_buf[BUF_SIZE];
-static char backing_buffer[BUF_SIZE];
 
-// Ring buffer holding the data from user
+// Buffer holding the line input from uart
+char readline_buffer[READLINE_BUF_SIZE];
+
+// Ring buffer and its backing buffer holding the data from user
+static char backing_buffer[BUF_SIZE];
 static struct ring_t ring_buffer;
 
 // Input done is set 1 to from ISR when user is done
@@ -205,7 +220,7 @@ void keyboard_ISR(void) {
 exit_kb_isr:
 
     // Wait until key is depressed
-    do { portG_read(KB_PIN, &key_state); } while(key_state == LOW);
+    do { portG_read(KB_PIN, &key_state); } while (key_state == LOW);
 
     // Wait for debounce
     Delay(200);
@@ -237,6 +252,25 @@ int read_user_input() {
 
     // Return the number of keys read (size of the ring buffer)
     return ring_size(&ring_buffer);
+}
+
+int readline(char* buffer, int size) {
+    char data;
+    // Keeps track of bytes read from uart
+    int byte_count = 0;
+
+    if (size == 0) {
+        return 0;
+    }
+
+    // Read byte by byte from uart, until we reach size or read \r
+    do {
+        uart_getch(UART0, &data);
+        buffer[byte_count] = data;
+        byte_count++;
+    } while ((byte_count != size) || (data != '\r'));
+
+    return byte_count;
 }
 
 // Print the contents of the buffer at 1 char/s
@@ -279,9 +313,11 @@ int check_show_result() {
 
     ring_reset(&ring_buffer);
     if (match == 1) {
+        uart_send_str(UART0, "\nCorrecto\n");
         ring_put(&ring_buffer, 0xA);
         ring_put(&ring_buffer, 0xA);
     } else {
+        uart_send_str(UART0, "\nError\n");
         ring_put(&ring_buffer, 0xE);
         ring_put(&ring_buffer, 0xE);
     }
@@ -342,6 +378,12 @@ int setup(void) {
     ic_enable(INT_TIMER0);
     ic_disable(INT_EINT1);
 
+    // Setup uart controller
+    uart_init();
+    uart_lconf(UART0, &uconf);
+    uart_conf_rxmode(UART0, INT);
+    uart_conf_txmode(UART0, INT);
+
     // Finally, unmask the global register
     // If disabled, no interrupt will be serviced, even
     // if the individual line is enabled
@@ -357,6 +399,9 @@ int setup(void) {
 }
 
 int loop(void) {
+    int offset = 0;
+    int uart_bytes_read;
+
     switch (game_state) {
         case INIT:
             D8Led_digit(0xC);
@@ -368,22 +413,49 @@ int loop(void) {
 
         case SHOW_PASS:
             print_password();
-            // FIXME(borja): Need the delay? (before or after print?)
+            // Only need the delay if timer doesn't wait on last iteration (watermark check done after print)
             Delay(10000);
             game_state = GUESS;
             break;
 
         case GUESS:
+            // Guess input using UART
+            // Send instruction to the user, then wait until user
+            // fills the readline_buffer
+            uart_send_str(UART0, "Introduzca passwd: ");
             D8Led_digit(0xF);
-            while (read_user_input() < 4) {
-                D8Led_digit(0xE);
+            do {
+                uart_bytes_read = readline(readline_buffer, READLINE_BUF_SIZE);
+                if (readline_buffer[uart_bytes_read] == '\r') {
+                    uart_bytes_read--;
+                }
+
+                // Only show if < 4, do it here otherwise
+                // we'll always do it no matter if the user was right
+                if (uart_bytes_read < 4) {
+                    D8Led_digit(0xE);
+                    Delay(10000);
+                }
+            } while (uart_bytes_read < 4);
+
+            // Copy last 4 bytes into guess
+            // If the count was larger, keep the last 4 (offset)
+            if (uart_bytes_read > 4) {
+                offset = uart_bytes_read - 4;
             }
+
+            // Copy the last 4 bytes
+            ring_reset(&ring_buffer);
+            for (; offset < uart_bytes_read; offset++) {
+                ring_put(&ring_buffer, ascii2digit(readline_buffer[offset]));
+            }
+
             game_state = SHOW_GUESS;
             break;
 
         case SHOW_GUESS:
             print_guess();
-            // FIXME(borja): Need the delay? (before or after print?)
+            // Only need the delay if timer doesn't wait on last iteration (watermark check done after print)
             Delay(10000);
             game_state = GAME_OVER;
             break;
