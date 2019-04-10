@@ -329,8 +329,8 @@ static char uart_readfrombuf(enum UART port) {
     uart_rx_ready(port);
     data = pst->ibuf[pst->rP];
     pst->rP = (pst->rP + 1) % BUFLEN;
+    return data;
 }
-
 
 // Rx ISR on port 0
 // This interrupt is raised whenever
@@ -445,7 +445,7 @@ int uart_sendch(enum UART port, char c) {
                 uart_write(port, '\r');
                 uart_tx_ready(port);
             }
-            uart_write(port, '\n');
+            uart_write(port, c);
             break;
 
         case INT:

@@ -268,7 +268,7 @@ int readline(char* buffer, int size) {
         uart_getch(UART0, &data);
         buffer[byte_count] = data;
         byte_count++;
-    } while ((byte_count != size) || (data != '\r'));
+    } while ((byte_count != size) && (data != '\r'));
 
     return byte_count;
 }
