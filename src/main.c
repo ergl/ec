@@ -382,8 +382,8 @@ int setup(void) {
     // Setup uart controller
     uart_init();
     uart_lconf(UART0, &uconf);
-    uart_conf_rxmode(UART0, INT);
-    uart_conf_txmode(UART0, INT);
+    uart_conf_rxmode(UART0, POLL);
+    uart_conf_txmode(UART0, POLL);
 
     // Finally, unmask the global register
     // If disabled, no interrupt will be serviced, even
