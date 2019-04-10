@@ -179,6 +179,7 @@ int uart_conf_txmode(enum UART port, enum URxTxMode mode) {
     // Set rUCONn[9] to 1 for tx interrupt mode level (0 is Pulse)
     switch (port) {
         case UART0:
+            // FIXME(borja): Not setting bits [3:2] for some reason
             rUCON0 = (rUCON0 & ~(0x3 << 2)) | (conf << 2) | (0x1 << 9);
             break;
 
@@ -335,6 +336,9 @@ static char uart_readfrombuf(enum UART port) {
 // Rx ISR on port 0
 // This interrupt is raised whenever
 // the receive shift register is filled with data
+//
+// FIXME(borja): Not called again
+// Transmit shifter not emptied, when is an interrupt raised?
 void Uart0_RxInt(void) {
     // Write it to the ring buffer
     uart_readtobuf(UART0);

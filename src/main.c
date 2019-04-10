@@ -267,6 +267,7 @@ int readline(char* buffer, int size) {
     do {
         uart_getch(UART0, &data);
         buffer[byte_count] = data;
+        // TODO(borja): Remember to set \r\n in termite
         byte_count++;
     } while ((byte_count != size) && (data != '\r'));
 
