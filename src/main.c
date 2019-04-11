@@ -382,8 +382,8 @@ int setup(void) {
     // Setup uart controller
     uart_init();
     uart_lconf(UART0, &uconf);
-    uart_conf_rxmode(UART0, POLL);
-    uart_conf_txmode(UART0, POLL);
+    uart_conf_rxmode(UART0, INT);
+    uart_conf_txmode(UART0, INT);
 
     // Finally, unmask the global register
     // If disabled, no interrupt will be serviced, even
@@ -427,7 +427,7 @@ int loop(void) {
             D8Led_digit(0xF);
             do {
                 uart_bytes_read = readline(readline_buffer, READLINE_BUF_SIZE);
-                if (readline_buffer[uart_bytes_read] == '\r') {
+                if (readline_buffer[uart_bytes_read-1] == '\r') {
                     uart_bytes_read--;
                 }
 
@@ -441,7 +441,7 @@ int loop(void) {
 
             // Copy last 4 bytes into guess
             // If the count was larger, keep the last 4 (offset)
-            if (uart_bytes_read > 4) {
+            if (uart_bytes_read >= 4) {
                 offset = uart_bytes_read - 4;
             }
 

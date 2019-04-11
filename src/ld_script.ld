@@ -4,13 +4,13 @@
 **    ld_script.ld  10/6/2014
 **
 **    Estructura de Computadores
-**    Dpto. de Arquitectura de Computadores y Automática
-**    Facultad de Informática. Universidad Complutense de Madrid
+**    Dpto. de Arquitectura de Computadores y AutomÃ¡tica
+**    Facultad de InformÃ¡tica. Universidad Complutense de Madrid
 **
-**  Propósito:
+**  PropÃ³sito:
 **    Script de enlazado
 **
-**  Notas de diseño:
+**  Notas de diseÃ±o:
 **
 **-------------------------------------------------------------------*/
 
@@ -19,15 +19,17 @@ SECTIONS
     . = 0x0C100000;
     .data : {
       *(.data*)
-      *(.rodata*) 
+      *(.rodata*)
     }
-	Image_ZI_Base = .;
-    .bss : { 
+
+    .bss ALIGN(0x4): {
+      Image_ZI_Base = .;
       *(.bss*)
       *(COMMON)
     }
-	Image_ZI_Limit = .;
-    .text : { 
+
+    Image_ZI_Limit = .;
+    .text : {
       *(.text*)
     }
     PROVIDE( end = . );
@@ -39,4 +41,3 @@ GROUP(
    libm.a
    libnosys.a
  )
- 

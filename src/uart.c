@@ -17,11 +17,11 @@ struct port_stat {
     // Treated as a ring buffer
     unsigned char ibuf[BUFLEN];
     // Read pointer into ibuf
-    int rP;
+    volatile int rP;
     // Write pointer into ibuf
-    int wP;
+    volatile int wP;
     // On INTerrupt mode, points to the string being sent
-    char *sendP;
+    volatile char *sendP;
     // Should echo back received chars?
     enum ONOFF echo;
 };
@@ -327,7 +327,9 @@ static char uart_readfrombuf(enum UART port) {
     char data;
     struct port_stat *pst = &uport[port];
 
-    uart_rx_ready(port);
+    // Wait until ring buffer is not empty
+    while (pst->rP == pst->wP);
+
     data = pst->ibuf[pst->rP];
     pst->rP = (pst->rP + 1) % BUFLEN;
     return data;
